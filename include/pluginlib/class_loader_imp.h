@@ -47,6 +47,11 @@
 #include <sstream>
 #include <stdexcept>
 
+// Helper function to load information of statically linked plugins.
+// This is needed for the static version of pluginlib used in systems
+// like Android.
+std::map<std::string, pluginlib::ClassDesc> getStaticClassesAvailable(void);
+
 namespace pluginlib 
 {
   template <class T>
@@ -64,11 +69,9 @@ namespace pluginlib
       throw pluginlib::ClassLoaderException("Unable to find package: " + package_);
     }
 
-    if (plugin_xml_paths_.size() == 0)
-    {
-      plugin_xml_paths_ = getPluginXmlPaths(package_, attrib_name_);
-    }
-    classes_available_ = determineAvailableClasses(plugin_xml_paths_);
+    // get static info of the already loaded plugin library
+    classes_available_ = getStaticClassesAvailable();
+    
     ROS_DEBUG_NAMED("pluginlib.ClassLoader","Finished constructring ClassLoader, base = %s, address = %p", base_class.c_str(), this);
   }
 
@@ -514,7 +517,7 @@ namespace pluginlib
       throw pluginlib::LibraryLoadException(getErrorStringForUnknownClass(lookup_name));
     }
 
-    std::string library_path = getClassLibraryPath(lookup_name);
+    std::string library_path = it->second.library_name_;
     if (library_path == "")
     {
       ROS_DEBUG_NAMED("pluginlib.ClassLoader","No path could be found to the library containing %s.", lookup_name.c_str());
